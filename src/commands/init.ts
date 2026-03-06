@@ -1,5 +1,5 @@
 import { createInterface } from 'readline';
-import { writeFileSync, existsSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import type { IosPlatformConfig, AndroidPlatformConfig } from '../config.js';
 
@@ -7,7 +7,15 @@ function prompt(rl: ReturnType<typeof createInterface>, question: string): Promi
   return new Promise((res) => rl.question(question, res));
 }
 
-export async function init(): Promise<void> {
+export function setPackageVersion(version: string): void {
+  const pkgPath = resolve(process.cwd(), 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as Record<string, unknown>;
+  pkg.version = version;
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+  console.log(`Set package.json version to ${version}`);
+}
+
+export async function init(options: { initialVersion?: string } = {}): Promise<void> {
   const configPath = resolve(process.cwd(), 'changeset-mobile.config.json');
 
   if (existsSync(configPath)) {
@@ -59,4 +67,8 @@ export async function init(): Promise<void> {
 
   writeFileSync(configPath, JSON.stringify({ platforms }, null, 2) + '\n');
   console.log('Created changeset-mobile.config.json');
+
+  if (options.initialVersion) {
+    setPackageVersion(options.initialVersion);
+  }
 }
