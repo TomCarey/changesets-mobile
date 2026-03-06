@@ -77,13 +77,6 @@ describe('loadConfig', () => {
     await expect(loadConfig()).rejects.toThrow('"platforms" array');
   });
 
-  it('throws when iOS config is missing infoPlist', async () => {
-    writeConfig(JSON.stringify({
-      platforms: [{ platform: 'ios', pbxproj: 'ios/App.xcodeproj/project.pbxproj' }],
-    }));
-    await expect(loadConfig()).rejects.toThrow('"infoPlist"');
-  });
-
   it('throws when iOS config is missing pbxproj', async () => {
     writeConfig(JSON.stringify({
       platforms: [{ platform: 'ios', infoPlist: 'ios/Info.plist' }],

@@ -109,3 +109,25 @@ describe('project.pbxproj', () => {
     expect(pbx).toMatch(/CURRENT_PROJECT_VERSION = 43;/);
   });
 });
+
+describe('pbxproj-only (no infoPlist)', () => {
+  it('updates MARKETING_VERSION without an infoPlist', () => {
+    syncIos({ platform: 'ios', pbxproj: pbxprojPath }, '2.1.0');
+    const content = readFileSync(pbxprojPath, 'utf-8');
+    const matches = content.match(/MARKETING_VERSION = 2\.1\.0;/g);
+    expect(matches).toHaveLength(2);
+  });
+
+  it('does not touch Info.plist when infoPlist is omitted', () => {
+    syncIos({ platform: 'ios', pbxproj: pbxprojPath }, '2.1.0');
+    const content = readFileSync(plistPath, 'utf-8');
+    expect(content).toMatch(/<string>1\.0\.0<\/string>/);
+  });
+
+  it('auto-increments CURRENT_PROJECT_VERSION from pbxproj when infoPlist is omitted', () => {
+    syncIos({ platform: 'ios', pbxproj: pbxprojPath, buildNumber: 'auto' }, '2.1.0');
+    const content = readFileSync(pbxprojPath, 'utf-8');
+    const matches = content.match(/CURRENT_PROJECT_VERSION = 43;/g);
+    expect(matches).toHaveLength(2);
+  });
+});

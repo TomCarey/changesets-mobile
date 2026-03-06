@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export interface IosPlatformConfig {
   platform: 'ios';
-  infoPlist: string;
+  infoPlist?: string;
   pbxproj: string;
   buildNumber?: 'auto' | number;
 }
@@ -51,7 +51,6 @@ function validateConfig(config: Config): void {
 
   for (const p of config.platforms) {
     if (p.platform === 'ios') {
-      if (!p.infoPlist) throw new Error('iOS config requires "infoPlist".');
       if (!p.pbxproj) throw new Error('iOS config requires "pbxproj".');
     } else if (p.platform === 'android') {
       if (!p.buildGradle) throw new Error('Android config requires "buildGradle".');

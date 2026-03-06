@@ -10,8 +10,13 @@ function writeFile(filePath: string, content: string): void {
   writeFileSync(resolve(process.cwd(), filePath), content, 'utf-8');
 }
 
-function getCurrentBuildNumber(plistContent: string): number {
+function getCurrentBuildNumberFromPlist(plistContent: string): number {
   const match = plistContent.match(/<key>CFBundleVersion<\/key>\s*<string>(\d+)<\/string>/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+function getCurrentBuildNumberFromPbxproj(pbxprojContent: string): number {
+  const match = pbxprojContent.match(/CURRENT_PROJECT_VERSION = (\d+);/);
   return match ? parseInt(match[1], 10) : 0;
 }
 
@@ -19,13 +24,18 @@ export function syncIos(config: IosPlatformConfig, version: string): void {
   // Compute build number once so Info.plist and pbxproj stay in sync
   let buildNumber: number | undefined;
   if (config.buildNumber === 'auto') {
-    const plistContent = readFile(config.infoPlist);
-    buildNumber = getCurrentBuildNumber(plistContent) + 1;
+    if (config.infoPlist) {
+      buildNumber = getCurrentBuildNumberFromPlist(readFile(config.infoPlist)) + 1;
+    } else {
+      buildNumber = getCurrentBuildNumberFromPbxproj(readFile(config.pbxproj)) + 1;
+    }
   } else if (config.buildNumber !== undefined) {
     buildNumber = config.buildNumber;
   }
 
-  syncInfoPlist(config.infoPlist, version, buildNumber);
+  if (config.infoPlist) {
+    syncInfoPlist(config.infoPlist, version, buildNumber);
+  }
   syncPbxproj(config.pbxproj, version, buildNumber);
 
   const buildInfo = buildNumber !== undefined ? ` (build ${buildNumber})` : '';
