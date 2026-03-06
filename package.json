@@ -1,5 +1,5 @@
 {
-  "name": "changeset-mobile",
+  "name": "changesets-mobile",
   "version": "0.0.1",
   "description": "Changeset wrapper with iOS and Android native version management",
   "type": "module",
@@ -10,11 +10,33 @@
     "build": "tsc",
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm test && npm run build"
   },
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "changesets",
+    "ios",
+    "android",
+    "mobile",
+    "versioning",
+    "react-native"
+  ],
+  "author": "Tom Carey",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/TomCarey/changesets-mobile.git"
+  },
+  "homepage": "https://github.com/TomCarey/changesets-mobile#readme",
+  "bugs": {
+    "url": "https://github.com/TomCarey/changesets-mobile/issues"
+  },
   "dependencies": {
     "@changesets/cli": "^2.27.0",
     "execa": "^9.0.0"

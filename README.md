@@ -1,44 +1,42 @@
-# changeset-mobile
+# changesets-mobile
 
-A CLI that wraps [@changesets/cli](https://github.com/changesets/changesets) to support iOS and Android native version management. After `changeset version` bumps your `package.json`, this tool syncs the new version into your iOS and Android native files automatically.
-
-## What it updates
-
-| Platform | File | Fields |
-|---|---|---|
-| iOS | `Info.plist` | `CFBundleShortVersionString`, `CFBundleVersion` |
-| iOS | `project.pbxproj` | `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION` |
-| Android | `build.gradle` / `build.gradle.kts` | `versionName`, `versionCode` |
-
-Both Groovy DSL and Kotlin DSL are supported for Android.
+A CLI that wraps [@changesets/cli](https://github.com/changesets/changesets) to support iOS and Android native version management. Instead of only bumping `package.json`, it syncs the new version into your iOS (`Info.plist` + `project.pbxproj`) and Android (`build.gradle` / `build.gradle.kts`) files automatically.
 
 ## Installation
 
 ```bash
-npm install --save-dev changeset-mobile
-# or globally
-npm install -g changeset-mobile
+npm install --save-dev changesets-mobile
 ```
 
 ## Setup
 
-If you haven't already, initialise changesets in your repo:
-
 ```bash
+# If you haven't already, initialise changesets in your repo
 npx changeset init
+
+# Then set up changesets-mobile
+npx changeset-mobile init --version 1.0.0
 ```
 
-Then run the interactive setup for this tool:
+`init` creates a `changeset-mobile.config.json` in your project root and optionally sets the initial version in `package.json`.
+
+## Commands
 
 ```bash
-npx changeset-mobile init
+changeset-mobile init                    # Interactive setup — creates changeset-mobile.config.json
+changeset-mobile init --version 1.0.0   # Same, but also sets the initial version in package.json
+changeset-mobile version                 # Runs "changeset version" then syncs into native files
 ```
 
-This creates a `changeset-mobile.config.json` file in your project root.
+For authoring changesets (describing what changed in a PR), use the standard CLI directly:
+
+```bash
+npx changeset add
+```
 
 ## Configuration
 
-`changeset-mobile.config.json`:
+Create `changeset-mobile.config.json` in your project root (the `init` command does this for you):
 
 ```json
 {
@@ -62,63 +60,43 @@ Config files support `// line comments` for readability.
 
 ### Field reference
 
-| Field | Platform | Required | Description |
-|---|---|---|---|
-| `platform` | both | yes | `"ios"` or `"android"` |
-| `infoPlist` | iOS | yes | Path to `Info.plist` |
-| `pbxproj` | iOS | yes | Path to `project.pbxproj` |
-| `buildNumber` | iOS | no | `"auto"` to increment, a fixed integer, or omit to skip |
-| `buildGradle` | Android | yes | Path to `build.gradle` or `build.gradle.kts` |
-| `versionCode` | Android | no | `"auto"` to increment, a fixed integer, or omit to skip |
+| Field         | Platform | Required | Description |
+|---------------|----------|----------|-------------|
+| `platform`    | both     | ✅       | `"ios"` or `"android"` |
+| `infoPlist`   | iOS      | ✅       | Path to `Info.plist` |
+| `pbxproj`     | iOS      | ✅       | Path to `project.pbxproj` |
+| `buildNumber` | iOS      | ❌       | `"auto"` to increment, integer to fix, omit to skip |
+| `buildGradle` | Android  | ✅       | Path to `build.gradle` or `build.gradle.kts` |
+| `versionCode` | Android  | ❌       | `"auto"` to increment, integer to fix, omit to skip |
 
-## Usage
+## How it works
 
-### Authoring a changeset (on each PR)
+1. `package.json` is the **source of truth** for the version — changesets manages it natively.
+2. After `changeset version` runs, this tool reads the new version from `package.json` and writes it into the configured native files.
+3. Build number / versionCode can be auto-incremented or set to a fixed value via config.
 
-Use the standard changesets CLI to describe what changed:
+### iOS
 
-```bash
-npx changeset add
-```
+- **Info.plist** — updates `CFBundleShortVersionString` (version) and `CFBundleVersion` (build number)
+- **project.pbxproj** — updates `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` across all build configurations
 
-### Releasing (on main / in CI)
+### Android
 
-```bash
-npx changeset-mobile version
-```
-
-This runs `changeset version` (which bumps `package.json` and updates changelogs), then reads the new version and writes it into all configured native files.
-
-Commit and tag the result:
-
-```bash
-git add -A && git commit -m "chore: release vX.Y.Z"
-git tag vX.Y.Z && git push --follow-tags
-```
+- **build.gradle / build.gradle.kts** — updates `versionName` and `versionCode`
+- Both Groovy DSL (`.gradle`) and Kotlin DSL (`.kts`) syntax are supported
 
 ## Typical workflow
 
 ```bash
-# One-time repo setup
-npx changeset init
-npx changeset-mobile init
-
 # On each PR — describe the change type (patch / minor / major)
 npx changeset add
 
-# On release
+# On release (main branch / CI)
 npx changeset-mobile version
 git add -A && git commit -m "chore: release vX.Y.Z"
 git tag vX.Y.Z && git push --follow-tags
 ```
 
-## How versioning works
+## License
 
-`package.json` is the source of truth for the version — changesets manages it natively. This tool reads the post-bump version from `package.json` and writes it into the configured native files.
-
-When `buildNumber` / `versionCode` is set to `"auto"`, the current value is read from the file and incremented by 1. The same computed value is applied to both `Info.plist` and `project.pbxproj` so they stay in sync.
-
-## Dependencies
-
-- [`@changesets/cli`](https://github.com/changesets/changesets) — core versioning and changelog engine
-- [`execa`](https://github.com/sindresorhus/execa) — spawns the changeset CLI as a subprocess
+MIT
