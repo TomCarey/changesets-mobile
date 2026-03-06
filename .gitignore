@@ -1,2 +1,17 @@
 node_modules/
 dist/
+
+# Claude Code
+.claude/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
