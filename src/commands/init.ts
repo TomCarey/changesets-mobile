@@ -1,7 +1,45 @@
 import { createInterface } from 'readline';
-import { writeFileSync, readFileSync, existsSync } from 'fs';
-import { resolve } from 'path';
+import { writeFileSync, readFileSync, existsSync, readdirSync } from 'fs';
+import { resolve, join, relative } from 'path';
 import type { IosPlatformConfig, AndroidPlatformConfig } from '../config.js';
+
+function findXcodeproj(dir: string, depth = 0): string | undefined {
+  if (depth > 3) return undefined;
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return undefined;
+  }
+  for (const entry of entries) {
+    if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+    if (entry.isDirectory()) {
+      if (entry.name.endsWith('.xcodeproj')) return join(dir, entry.name);
+      const found = findXcodeproj(join(dir, entry.name), depth + 1);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+function findInfoPlist(dir: string, depth = 0): string | undefined {
+  if (depth > 3) return undefined;
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return undefined;
+  }
+  for (const entry of entries) {
+    if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+    if (entry.isFile() && entry.name === 'Info.plist') return join(dir, entry.name);
+    if (entry.isDirectory() && !entry.name.endsWith('.xcodeproj')) {
+      const found = findInfoPlist(join(dir, entry.name), depth + 1);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
 
 function prompt(rl: ReturnType<typeof createInterface>, question: string): Promise<string> {
   return new Promise((res) => rl.question(question, res));
@@ -31,15 +69,26 @@ export async function init(options: { initialVersion?: string } = {}): Promise<v
     const choice = platformsInput.trim().toLowerCase() || 'both';
 
     if (choice === 'ios' || choice === 'both') {
-      const infoPlist = await prompt(rl, 'Path to Info.plist [ios/App/Info.plist]: ');
-      const pbxproj = await prompt(rl, 'Path to project.pbxproj [ios/App.xcodeproj/project.pbxproj]: ');
+      const cwd = process.cwd();
+      const xcodeproj = findXcodeproj(cwd);
+      const defaultPbxproj = xcodeproj
+        ? relative(cwd, join(xcodeproj, 'project.pbxproj'))
+        : 'ios/App.xcodeproj/project.pbxproj';
+      const defaultInfoPlist = xcodeproj
+        ? (findInfoPlist(resolve(xcodeproj, '..')) ?? '')
+          .replace(cwd + '/', '')
+        : '';
+
+      const pbxprojInput = await prompt(rl, `Path to project.pbxproj [${defaultPbxproj}]: `);
+      const infoPlistInput = await prompt(rl, `Path to Info.plist (leave blank to skip) [${defaultInfoPlist || 'none'}]: `);
       const buildNumberInput = await prompt(rl, 'Build number strategy (auto, skip, or a fixed integer) [auto]: ');
 
       const bn = buildNumberInput.trim() || 'auto';
+      const resolvedInfoPlist = infoPlistInput.trim() || defaultInfoPlist || undefined;
       const iosConfig: IosPlatformConfig = {
         platform: 'ios',
-        infoPlist: infoPlist.trim() || 'ios/App/Info.plist',
-        pbxproj: pbxproj.trim() || 'ios/App.xcodeproj/project.pbxproj',
+        ...(resolvedInfoPlist ? { infoPlist: resolvedInfoPlist } : {}),
+        pbxproj: pbxprojInput.trim() || defaultPbxproj,
       };
       if (bn !== 'skip') {
         iosConfig.buildNumber = bn === 'auto' ? 'auto' : parseInt(bn, 10);
