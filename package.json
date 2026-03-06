@@ -1,6 +1,6 @@
 {
   "name": "changesets-mobile",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Changeset wrapper with iOS and Android native version management",
   "type": "module",
   "bin": {
