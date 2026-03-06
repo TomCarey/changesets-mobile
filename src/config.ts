@@ -6,6 +6,7 @@ export interface IosPlatformConfig {
   infoPlist?: string;
   pbxproj: string;
   buildNumber?: 'auto' | number;
+  targets?: string[];
 }
 
 export interface AndroidPlatformConfig {
