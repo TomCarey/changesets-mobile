@@ -3,6 +3,7 @@ dist/
 
 # Claude Code
 .claude/
+CLAUDE.md
 
 # Environment files
 .env
